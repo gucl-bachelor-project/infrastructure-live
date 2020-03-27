@@ -64,6 +64,7 @@ data "template_file" "business_logic_app_bootstrap_config" {
     app_docker_compose_bucket_id   = data.terraform_remote_state.global.outputs.app_docker_composes_bucket_id
     main_app_repo_url              = data.terraform_remote_state.global.outputs.image_registries["bl-main-app"].repository_url
     support_app_repo_url           = data.terraform_remote_state.global.outputs.image_registries["bl-support-app"].repository_url
+    nginx_repo_url                 = data.terraform_remote_state.global.outputs.image_registries["nginx"].repository_url
     logging_app_host_url           = "${module.logging_vm.ipv4_address}:8080"
     db_access_app_1_host_url       = "${module.db_access_vm.ipv4_address}:8080"
     db_access_admin_app_1_host_url = "${module.db_access_vm.ipv4_address}:8081"
