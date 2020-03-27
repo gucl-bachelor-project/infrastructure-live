@@ -37,7 +37,7 @@ variable "aws_config" {
   description = "AWS configuration to be installed for AWS CLI program"
 }
 
-variable "app_bootstrap_config_script" {
+variable "app_start_script" {
   type        = string
-  description = "Cloud-init script to be run when the VM boots"
+  description = "Cloud-init script to be run when the VM boots to start the application"
 }

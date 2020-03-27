@@ -1,6 +1,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # CLOUD INIT CONFIG FOR VM
-# To be run when the VM boots for the first time.
+# To be run when the VM boots for the first time to setup VM and start application.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ data "template_file" "aws_cli_config" {
   template = file("${path.module}/init-config-templates/aws-cli-setup.tpl")
 
   vars = {
-    aws_region            = "eu-central-1"
+    aws_region            = var.aws_config.region
     aws_access_key_id     = var.aws_config.access_key_id
     aws_secret_access_key = var.aws_config.secret_access_key
   }
@@ -39,7 +39,7 @@ data "template_file" "vm_dev_user_init_config" {
 # ------------------------------------------------------------------------------
 # COMBINED/MERGED CLOUD INIT CONFIG SCRIPT WITH ALL DEFINED SCRIPTS IN
 # THIS FILE.
-# To be installed and run on VM.
+# To be installed and run on VM during first boot.
 # ------------------------------------------------------------------------------
 data "template_cloudinit_config" "init_config" {
   gzip          = false
@@ -70,6 +70,6 @@ data "template_cloudinit_config" "init_config" {
   part {
     filename     = "app-vm-bootstrap.cfg"
     content_type = "text/cloud-config"
-    content      = var.app_bootstrap_config_script
+    content      = var.app_start_script
   }
 }

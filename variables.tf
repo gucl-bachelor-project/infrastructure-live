@@ -1,6 +1,6 @@
 variable "do_region" {
   default     = "fra1"
-  description = "Region to locate DigitalOcean resources in"
+  description = "Region to place DigitalOcean resources in"
 }
 
 variable "do_api_token" {
@@ -9,8 +9,8 @@ variable "do_api_token" {
 }
 
 variable "ssh_public_key_path" {
-  default     = null // Optional
-  description = "Local path to SSH key on your computer (example: /Users/<username>/.ssh/id_rsa.pub). Used if you wish to grant SSH access to deployed VMs in the development environment."
+  default     = null
+  description = "(Optional) Local path to SSH key on your computer (example: /Users/<username>/.ssh/id_rsa.pub). Used if you wish to grant SSH access to deployed VMs in the development environment."
 }
 
 variable "aws_access_key_id" {

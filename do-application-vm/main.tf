@@ -1,10 +1,10 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# DIGITALOCEAN DROPLET (VM) WITH STANDARD USER AND SERVICE CONFIG TO RUN DOCKERIZED APPLICATION WITH IMAGES LOCATED
-# IN AMAZON ECR AND DOCKER-COMPOSE FILES LOCATED IN S3 BUCKET.
+# DIGITALOCEAN DROPLET (VM) WITH STANDARD USER AND APPLICATION CONFIG TO RUN DOCKERIZED APPLICATION WITH IMAGES
+# LOCATED IN AMAZON ECR AND DOCKER-COMPOSE FILES LOCATED IN S3 BUCKET.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # ------------------------------------------------------------------------------
-# DEFINE DROPLET
+# DEPLOY DROPLET (VM)
 # ------------------------------------------------------------------------------
 resource "digitalocean_droplet" "droplet" {
   name               = var.vm_name
@@ -18,7 +18,7 @@ resource "digitalocean_droplet" "droplet" {
 }
 
 # ------------------------------------------------------------------------------
-# FETCH OS IMAGE TO BOOT VM ON
+# FETCH BAKED OS IMAGE TO BOOT VM ON
 # ------------------------------------------------------------------------------
 data "digitalocean_droplet_snapshot" "base_snapshot" {
   name_regex  = "^gkc-bproject-packer"

@@ -22,7 +22,7 @@ write_files:
 runcmd:
   # Load environment variables
   - . /etc/environment
-  # Download Docker compose files from S3 bucket
+  # Download Docker Compose files for application from S3 bucket
   - aws s3 cp s3://${app_docker_compose_bucket_id}/business-logic/ /usr/local/app/ --recursive
-  # Setup service and start it
+  # Setup app and start it
   - service-bootstrap -r ${ecr_base_url}

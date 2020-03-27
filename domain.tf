@@ -19,5 +19,5 @@ resource "digitalocean_record" "www" {
   domain = digitalocean_domain.domain[count.index].name
   type   = "A"
   name   = "@"
-  value  = module.business_logic_vm.ipv4_address # TODO: Change to load balancer once available
+  value  = module.business_logic_vm.ipv4_address
 }
