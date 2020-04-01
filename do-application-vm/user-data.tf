@@ -26,13 +26,16 @@ data "template_file" "aws_cli_config" {
 
 # ------------------------------------------------------------------------------
 # CLOUD INIT CONFIG SCRIPT TO CONFIGURE SSH ACCESS TO VM IF AUTHORIZED
-# SSH KEY IS SPECIFIED.
+# SSH KEYS ARE SPECIFIED.
 # ------------------------------------------------------------------------------
-data "template_file" "vm_dev_user_init_config" {
-  template = file("${path.module}/init-config-templates/vm-dev-user.tpl")
+data "template_file" "vm_user_init_config" {
+  template = file("${path.module}/init-config-templates/vm-user.tpl")
 
   vars = {
-    authorized_ssh_key = var.ssh_key != null ? var.ssh_key.public_key : ""
+    authorized_ssh_keys = yamlencode([
+      for ssh_key in var.authorized_ssh_keys :
+      ssh_key.public_key
+    ])
   }
 }
 
@@ -57,14 +60,10 @@ data "template_cloudinit_config" "init_config" {
     content      = data.template_file.vm_access_config.rendered
   }
 
-  dynamic "part" {
-    for_each = var.ssh_key != null ? [1] : []
-
-    content {
-      filename     = "vm-user-init.cfg"
-      content_type = "text/cloud-config"
-      content      = data.template_file.vm_dev_user_init_config.rendered
-    }
+  part {
+    filename     = "vm-user-init.cfg"
+    content_type = "text/cloud-config"
+    content      = data.template_file.vm_user_init_config.rendered
   }
 
   part {

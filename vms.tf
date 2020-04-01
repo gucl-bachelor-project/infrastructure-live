@@ -14,10 +14,6 @@ locals {
     access_key_id     = var.aws_access_key_id
     secret_access_key = var.aws_secret_access_key
   }
-  ssh_key = length(digitalocean_ssh_key.dev_ssh_key) == 1 ? {
-    public_key  = digitalocean_ssh_key.dev_ssh_key[0].public_key,
-    fingerprint = digitalocean_ssh_key.dev_ssh_key[0].fingerprint
-  } : null
   vms = [
     module.business_logic_vm,
     module.logging_vm,
@@ -34,15 +30,13 @@ locals {
 }
 
 # ------------------------------------------------------------------------------
-# TRANSFER SSH KEY TO DIGITALOCEAN IF IN DEVELOPMENT ENVIRONMENT AND
-# SSH KEY IS PROVIDED.
-# To be used for SSH access to all VMs.
+# REFERENCE ALL SSH KEYS REGISTERED IN DIGITALOCEAN THAT SHOULD BE MARKED AS
+# AN AUTHORIZED KEY ON ALL VMS TO ALLOW SSH ACCESS.
 # ------------------------------------------------------------------------------
-resource "digitalocean_ssh_key" "dev_ssh_key" {
-  count = local.environment == "development" && var.ssh_public_key_path != null ? 1 : 0
+data "digitalocean_ssh_key" "authorized_ssh_keys" {
+  for_each = toset(var.authorized_ssh_keys)
 
-  name       = "Dev SSH key (${local.environment})"
-  public_key = file(var.ssh_public_key_path)
+  name = each.value
 }
 
 # ------------------------------------------------------------------------------
@@ -51,12 +45,12 @@ resource "digitalocean_ssh_key" "dev_ssh_key" {
 module "business_logic_vm" {
   source = "./do-application-vm"
 
-  vm_name          = "business-logic"
-  do_region        = var.do_region
-  do_vm_size       = local.vm_size_per_environment[local.environment]
-  ssh_key          = local.ssh_key
-  aws_config       = local.aws_config
-  app_start_script = data.template_file.business_logic_app_bootstrap_config.rendered
+  vm_name             = "business-logic"
+  do_region           = var.do_region
+  do_vm_size          = local.vm_size_per_environment[local.environment]
+  authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
+  aws_config          = local.aws_config
+  app_start_script    = data.template_file.business_logic_app_bootstrap_config.rendered
 }
 
 # ------------------------------------------------------------------------------
@@ -86,12 +80,12 @@ data "template_file" "business_logic_app_bootstrap_config" {
 module "logging_vm" {
   source = "./do-application-vm"
 
-  vm_name          = "logging"
-  do_region        = var.do_region
-  do_vm_size       = local.vm_size_per_environment[local.environment]
-  ssh_key          = local.ssh_key
-  aws_config       = local.aws_config
-  app_start_script = data.template_file.logging_app_bootstrap_config.rendered
+  vm_name             = "logging"
+  do_region           = var.do_region
+  do_vm_size          = local.vm_size_per_environment[local.environment]
+  authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
+  aws_config          = local.aws_config
+  app_start_script    = data.template_file.logging_app_bootstrap_config.rendered
 }
 
 # ------------------------------------------------------------------------------
@@ -126,13 +120,13 @@ resource "digitalocean_volume_attachment" "logging_data_block_attachment" {
 module "db_access_vm" {
   source = "./do-application-vm"
 
-  vm_name          = "db-access"
-  tags             = [data.terraform_remote_state.global.outputs.db_allowed_droplet_tags[local.environment].name]
-  do_region        = var.do_region
-  do_vm_size       = local.vm_size_per_environment[local.environment]
-  ssh_key          = local.ssh_key
-  aws_config       = local.aws_config
-  app_start_script = data.template_file.db_access_app_bootstrap_config.rendered
+  vm_name             = "db-access"
+  tags                = [data.terraform_remote_state.global.outputs.db_allowed_droplet_tags[local.environment].name]
+  do_region           = var.do_region
+  do_vm_size          = local.vm_size_per_environment[local.environment]
+  authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
+  aws_config          = local.aws_config
+  app_start_script    = data.template_file.db_access_app_bootstrap_config.rendered
 }
 
 # ------------------------------------------------------------------------------

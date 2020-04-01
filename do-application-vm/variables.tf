@@ -19,13 +19,9 @@ variable "do_vm_size" {
   description = "DigitalOcean-specified Droplet/VM size (example: s-1vcpu-1gb)"
 }
 
-variable "ssh_key" {
-  type = object({
-    public_key  = string
-    fingerprint = string
-  })
-  default     = null
-  description = "Authorized SSH key for remote SSH access"
+variable "authorized_ssh_keys" {
+  default     = []
+  description = "List of authorized SSH keys (registered in DigitalOcean) for remote SSH access"
 }
 
 variable "aws_config" {

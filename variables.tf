@@ -8,9 +8,10 @@ variable "do_api_token" {
   description = "API token for DigitalOcean to manage resources"
 }
 
-variable "ssh_public_key_path" {
-  default     = null
-  description = "(Optional) Local path to SSH key on your computer (example: /Users/<username>/.ssh/id_rsa.pub). Used if you wish to grant SSH access to deployed VMs in the development environment."
+variable "authorized_ssh_keys" {
+  type        = list(string)
+  default     = []
+  description = "List of names for registered SSH keys (in DigitalOcean) that should have SSH access to the deployed VMs"
 }
 
 variable "aws_access_key_id" {

@@ -14,7 +14,10 @@ resource "digitalocean_droplet" "droplet" {
   size               = var.do_vm_size
   private_networking = true
   user_data          = data.template_cloudinit_config.init_config.rendered
-  ssh_keys           = var.ssh_key != null ? [var.ssh_key.fingerprint] : []
+  ssh_keys = [
+    for ssh_key in var.authorized_ssh_keys :
+    ssh_key.id
+  ]
 }
 
 # ------------------------------------------------------------------------------

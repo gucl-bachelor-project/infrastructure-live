@@ -11,12 +11,12 @@ users:
     shell: /bin/bash
     sudo: ['ALL=(ALL) NOPASSWD:ALL']
     ssh-authorized-keys:
-      - ${authorized_ssh_key}
+      ${authorized_ssh_keys}
 
 runcmd:
-  # Copy root's AWS credentials to dev user
+  # Copy root's AWS credentials to new user
   - cp -r /root/.aws /home/ubuntu/.aws
-  # Allow our dev root user to log in
+  # Allow the new user to log in
   - sed -i -e '$aAllowUsers ubuntu' /etc/ssh/sshd_config
   # Restart SSH service to apply new configuration
   - service ssh restart
