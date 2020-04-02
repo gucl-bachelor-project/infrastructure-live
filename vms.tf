@@ -16,9 +16,9 @@ locals {
   }
   vms = [
     module.business_logic_vm,
-    module.logging_vm,
     module.db_access_vm
   ]
+  logging_app_ip_address = data.terraform_remote_state.global.outputs.app_ips["logging_app_ip"].ip_address
   # Base URL of Amazon ECR where the Docker images for the application are stored
   ecr_base_url = data.terraform_remote_state.global.outputs.ecr_base_url
   # All Amazon ECR repositories where the Docker images for the application are stored
@@ -66,52 +66,12 @@ data "template_file" "business_logic_app_bootstrap_config" {
     main_app_repo_url              = local.ecr_repos["bl-main-app"].repository_url
     support_app_repo_url           = local.ecr_repos["bl-support-app"].repository_url
     nginx_repo_url                 = local.ecr_repos["nginx"].repository_url
-    logging_app_host_url           = "${module.logging_vm.ipv4_address}:8080"
+    logging_app_host_url           = "${local.logging_app_ip_address}:8080"
     db_access_app_1_host_url       = "${module.db_access_vm.ipv4_address}:8080"
     db_access_admin_app_1_host_url = "${module.db_access_vm.ipv4_address}:8081"
     db_access_app_2_host_url       = "${module.db_access_vm.ipv4_address}:9080"
     db_access_admin_app_2_host_url = "${module.db_access_vm.ipv4_address}:9081"
   }
-}
-
-# ------------------------------------------------------------------------------
-# DEPLOY VM FOR LOGGING APPLICATION
-# ------------------------------------------------------------------------------
-module "logging_vm" {
-  source = "./do-application-vm"
-
-  vm_name             = "logging"
-  do_region           = var.do_region
-  do_vm_size          = local.vm_size_per_environment[local.environment]
-  authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
-  aws_config          = local.aws_config
-  app_start_script    = data.template_file.logging_app_bootstrap_config.rendered
-}
-
-# ------------------------------------------------------------------------------
-# CLOUD INIT CONFIG SCRIPT TO START THE LOGGING APPLICATION ON VM.
-# To be run when the VM boots for the first time.
-# ------------------------------------------------------------------------------
-data "template_file" "logging_app_bootstrap_config" {
-  template = file("${path.module}/app-start-scripts/logging-app-bootstrap.tpl")
-
-  vars = {
-    ecr_base_url                 = local.ecr_base_url
-    app_docker_compose_bucket_id = local.app_docker_compose_bucket_id
-    logging_app_repo_url         = local.ecr_repos["logging-app"].repository_url
-    block_storage_name           = local.environment == "production" ? data.terraform_remote_state.global.outputs.prod_log_data_block_storage.name : ""
-    block_storage_mount_name     = local.environment == "production" ? replace(data.terraform_remote_state.global.outputs.prod_log_data_block_storage.name, "-", "_") : "" # All dash becomes underscore
-  }
-}
-
-# ------------------------------------------------------------------------------
-# ATTACH PERSISTENT BLOCK STORAGE TO LOGGING APP VM
-# ------------------------------------------------------------------------------
-resource "digitalocean_volume_attachment" "logging_data_block_attachment" {
-  count = local.environment == "production" ? 1 : 0
-
-  droplet_id = module.logging_vm.id
-  volume_id  = data.terraform_remote_state.global.outputs.prod_log_data_block_storage.id
 }
 
 # ------------------------------------------------------------------------------
@@ -139,7 +99,7 @@ data "template_file" "db_access_app_bootstrap_config" {
   vars = {
     ecr_base_url                 = local.ecr_base_url
     app_docker_compose_bucket_id = local.app_docker_compose_bucket_id
-    logging_app_host_url         = "${module.logging_vm.ipv4_address}:8080"
+    logging_app_host_url         = "${local.logging_app_ip_address}:8080"
     db_access_repo_url           = local.ecr_repos["db-access-app"].repository_url
     db_access_admin_repo_url     = local.ecr_repos["db-access-admin-app"].repository_url
     app_db_username              = local.db_cluster.app_user.name
