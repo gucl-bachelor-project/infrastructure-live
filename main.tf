@@ -46,5 +46,5 @@ data "terraform_remote_state" "global" {
 resource "digitalocean_project" "project" {
   name        = "Bproject – ${terraform.workspace}"
   environment = local.environment
-  resources   = concat([for vm in local.vms : vm.urn], [for domain in digitalocean_domain.domain : domain.urn])
+  resources   = [for vm in local.vms : vm.urn]
 }
