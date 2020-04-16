@@ -1,0 +1,130 @@
+version: 2.1
+
+base_image: &base_image hashicorp/terraform:0.12.21
+
+working_directory: &working_directory ~/terraform
+
+defaults: &defaults
+  working_directory: *working_directory
+  docker:
+    - image: *base_image
+
+repo_cache_key: &repo_cache_key global-repo-{{ .Branch }}-{{ .Revision }}
+
+restore_repo: &restore_repo
+  restore_cache:
+    key: *repo_cache_key
+
+save_repo: &save_repo
+  save_cache:
+    key: *repo_cache_key
+    paths:
+      - *working_directory
+
+attach_working_directory: &attach_working_directory
+  attach_workspace:
+    at: *working_directory
+
+jobs:
+  checkout:
+    <<: *defaults
+    steps:
+      - checkout
+      - *save_repo
+
+  init:
+    <<: *defaults
+    steps:
+      - *restore_repo
+      - run:
+          name: Init
+          command: terraform init
+      - persist_to_workspace:
+          root: *working_directory
+          paths:
+            - .terraform
+
+  format:
+    <<: *defaults
+    steps:
+      - *restore_repo
+      - *attach_working_directory
+      - run:
+          name: Format
+          command: terraform fmt -check -recursive
+
+  validate:
+    <<: *defaults
+    steps:
+      - *restore_repo
+      - *attach_working_directory
+      - run:
+          name: Validate
+          command: terraform validate
+
+  plan:
+    <<: *defaults
+    steps:
+      - *restore_repo
+      - *attach_working_directory
+      - run:
+          name: Plan
+          command: terraform plan -out=terraform.plan -var "do_api_token=$DO_API_TOKEN" -var "aws_access_key_id=$AWS_ACCESS_KEY_ID" -var "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" -var "authorized_ssh_keys=[$AUTHORIZED_SSH_KEYS]"
+      - run:
+          name: Save plan in plain format
+          command: |
+            printf 'Terraform plan is:\n```\n%s\n```' "$(terraform show terraform.plan -no-color)" > terraform_plan_plain.txt
+      - persist_to_workspace:
+          root: *working_directory
+          paths:
+            - terraform.plan
+            - terraform_plan_plain.txt
+
+  pr-comment:
+    working_directory: *working_directory
+    docker:
+      - image: gustavkc/circleci-github-pr-commenter:latest
+    steps:
+      - *restore_repo
+      - *attach_working_directory
+      - run:
+          name: Comment on PR
+          command: |
+            export PR_COMMENT=$(cat terraform_plan_plain.txt)
+            node /app/pr-comment.js
+
+  publish:
+    <<: *defaults
+    steps:
+      - *restore_repo
+      - *attach_working_directory
+      - store_artifacts:
+          path: terraform.plan
+          destination: terraform.plan
+
+workflows:
+  version: 2
+  validate_plan:
+    jobs:
+      - checkout
+      - init:
+          requires:
+            - checkout
+      - format:
+          requires:
+            - checkout
+      - validate:
+          requires:
+            - init
+      - plan:
+          requires:
+            - validate
+      - pr-comment:
+          requires:
+            - plan
+      - publish:
+          requires:
+            - plan
+          filters:
+            branches:
+              only: master
