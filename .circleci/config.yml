@@ -93,15 +93,6 @@ jobs:
             export PR_COMMENT=$(cat terraform_plan_plain.txt)
             node /app/pr-comment.js
 
-  publish:
-    <<: *defaults
-    steps:
-      - *restore_repo
-      - *attach_working_directory
-      - store_artifacts:
-          path: terraform.plan
-          destination: terraform.plan
-
 workflows:
   version: 2
   validate_plan:
@@ -122,9 +113,3 @@ workflows:
       - pr-comment:
           requires:
             - plan
-      - publish:
-          requires:
-            - plan
-          filters:
-            branches:
-              only: master
