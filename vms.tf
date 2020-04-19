@@ -43,7 +43,7 @@ data "digitalocean_ssh_key" "authorized_ssh_keys" {
 # DEPLOY VM FOR BUSINESS LOGIC APPLICATION
 # ------------------------------------------------------------------------------
 module "business_logic_vm" {
-  source = "./do-application-vm"
+  source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.0"
 
   vm_name             = "business-logic"
   do_region           = var.do_region
@@ -78,7 +78,7 @@ data "template_file" "business_logic_app_bootstrap_config" {
 # DEPLOY VM FOR DB ACCESS APPLICATION
 # ------------------------------------------------------------------------------
 module "db_access_vm" {
-  source = "./do-application-vm"
+  source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.0"
 
   vm_name             = "db-access"
   tags                = [data.terraform_remote_state.global.outputs.db_allowed_droplet_tags[local.environment].name]
