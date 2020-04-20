@@ -61,6 +61,7 @@ module "business_logic_vm" {
   authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
   aws_config          = local.aws_config
   app_start_script    = data.template_file.business_logic_app_bootstrap_config.rendered
+  tags                = [data.terraform_remote_state.global.outputs.logging_app_allowed_droplet_tag_name]
 }
 
 # ------------------------------------------------------------------------------
@@ -85,6 +86,16 @@ data "template_file" "business_logic_app_bootstrap_config" {
 }
 
 # ------------------------------------------------------------------------------
+# ASSIGN FLOATING IP BUSINESS LOGIC APP VM FOR "REAL" USER TRAFFIC IF PRODUCTION
+# ------------------------------------------------------------------------------
+resource "digitalocean_floating_ip_assignment" "logging_app_floating_ip_assignment" {
+  count = local.environment == "production" ? 1 : 0
+
+  ip_address = data.terraform_remote_state.global.outputs.app_ips.prod_app_ip.ip_address
+  droplet_id = module.business_logic_vm.id
+}
+
+# ------------------------------------------------------------------------------
 # DEPLOY VM FOR DB ACCESS APPLICATION
 # ------------------------------------------------------------------------------
 module "db_access_vm" {
@@ -92,12 +103,15 @@ module "db_access_vm" {
 
   vm_name             = "db-access"
   boot_image_id       = data.digitalocean_droplet_snapshot.base_snapshot.id
-  tags                = [data.terraform_remote_state.global.outputs.db_allowed_droplet_tags[local.environment].name]
   do_region           = var.do_region
   do_vm_size          = local.vm_size_per_environment[local.environment]
   authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
   aws_config          = local.aws_config
   app_start_script    = data.template_file.db_access_app_bootstrap_config.rendered
+  tags                = [
+    data.terraform_remote_state.global.outputs.db_allowed_droplet_tags[local.environment].name,
+    data.terraform_remote_state.global.outputs.logging_app_allowed_droplet_tag_name
+  ]
 }
 
 # ------------------------------------------------------------------------------
