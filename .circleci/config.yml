@@ -53,6 +53,18 @@ jobs:
           name: Format
           command: terraform fmt -check -recursive
 
+  static-analysis:
+    working_directory: /workdir
+    docker:
+      - image: wesleydeanflexion/tfsec
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /workdir
+      - run:
+          name: Static code analyis
+          command: tfsec .
+
   validate:
     <<: *defaults
     steps:
@@ -61,7 +73,6 @@ jobs:
       - run:
           name: Validate
           command: terraform validate
-
   plan:
     <<: *defaults
     steps:
@@ -102,6 +113,9 @@ workflows:
           requires:
             - checkout
       - format:
+          requires:
+            - checkout
+      - static-analysis:
           requires:
             - checkout
       - validate:
