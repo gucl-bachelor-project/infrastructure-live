@@ -69,7 +69,7 @@ module "business_logic_vm" {
 # To be run when the VM boots for the first time.
 # ------------------------------------------------------------------------------
 data "template_file" "business_logic_app_bootstrap_config" {
-  template = file("${path.module}/app-start-scripts/business-logic-app-bootstrap.tpl")
+  template = file("${path.module}/vm-config-scripts/business-logic-vm-config.tpl")
 
   vars = {
     ecr_base_url                   = local.ecr_base_url
@@ -108,7 +108,7 @@ module "db_access_vm" {
   authorized_ssh_keys = data.digitalocean_ssh_key.authorized_ssh_keys
   aws_config          = local.aws_config
   app_start_script    = data.template_file.db_access_app_bootstrap_config.rendered
-  tags                = [
+  tags = [
     data.terraform_remote_state.global.outputs.db_allowed_droplet_tags[local.environment].name,
     data.terraform_remote_state.global.outputs.logging_app_allowed_droplet_tag_name
   ]
@@ -119,7 +119,7 @@ module "db_access_vm" {
 # To be run when the VM boots for the first time.
 # ------------------------------------------------------------------------------
 data "template_file" "db_access_app_bootstrap_config" {
-  template = file("${path.module}/app-start-scripts/db-access-app-bootstrap.tpl")
+  template = file("${path.module}/vm-config-scripts/db-access-vm-config.tpl")
 
   vars = {
     ecr_base_url                 = local.ecr_base_url
