@@ -26,4 +26,4 @@ runcmd:
   # Download Docker Compose files for application from S3 bucket
   - aws s3 cp s3://${app_docker_compose_bucket_id}/db-access/ /usr/local/app/ --recursive
   # Setup app and start it
-  - service-bootstrap -r ${ecr_base_url}
+  - application-start -r ${ecr_base_url}
