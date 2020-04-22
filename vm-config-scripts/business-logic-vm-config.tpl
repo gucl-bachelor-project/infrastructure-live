@@ -25,4 +25,4 @@ runcmd:
   # Download Docker Compose files for application from S3 bucket
   - aws s3 cp s3://${app_docker_compose_bucket_id}/business-logic/ /usr/local/app/ --recursive
   # Setup app and start it
-  - application-start -r ${ecr_base_url}
+  - start-application -r ${ecr_base_url}
