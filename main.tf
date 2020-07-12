@@ -1,21 +1,21 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# SETUP MAIN RESOURCES FOR LIVE APPLICATION IN DIGITALOCEAN
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+# ------------------------------------------------------------------------------
+# SET UP DIGITALOCEAN PROVIDER
+# ------------------------------------------------------------------------------
 provider "digitalocean" {
   token = var.do_api_token
 }
 
 # ------------------------------------------------------------------------------
-# DEFINE ENVIRONMENT BASED ON TERRAFORM WORKSPACE.
+# DETERMINE ENVIRONMENT BASED ON TERRAFORM WORKSPACE
 # See: https://www.terraform.io/docs/state/workspaces.html
 # ------------------------------------------------------------------------------
 locals {
-  environment = contains(["production", "staging"], terraform.workspace) ? terraform.workspace : "development"
+  environment          = contains(["production", "staging"], terraform.workspace) ? terraform.workspace : "development"
+  global_module_output = data.terraform_remote_state.global.outputs # Output values from 'global' module
 }
 
 # ------------------------------------------------------------------------------
-# USE REMOTE BACKEND FOR INFRASTRUCTURE IN LIVE APPLICATION
+# REFERENCE REMOTE BACKEND WHERE THE TERRAFORM STATE IS STORED AND LOADED
 # ------------------------------------------------------------------------------
 terraform {
   backend "s3" {
@@ -28,7 +28,8 @@ terraform {
 }
 
 # ------------------------------------------------------------------------------
-# ACCESS DATA FROM 'GLOBAL' INFRASTRUCTURE MODULE
+# REFERENCE REMOTE BACKEND WHERE STATE OF 'GLOBAL' MODULE IS STORED TO
+# ACCESS ITS OUTPUTS
 # ------------------------------------------------------------------------------
 data "terraform_remote_state" "global" {
   backend = "s3"
@@ -40,8 +41,7 @@ data "terraform_remote_state" "global" {
 }
 
 # ------------------------------------------------------------------------------
-# SETUP PROJECT IN DIGITALOCEAN TO GROUP RESOURCES (VMs AND DOMAIN RECORDS)
-# IN CURRENT ENVIRONMENT.
+# SETUP PROJECT IN DIGITALOCEAN TO GROUP RESOURCES IN CURRENT ENVIRONMENT
 # ------------------------------------------------------------------------------
 resource "digitalocean_project" "project" {
   name        = "Bproject – ${terraform.workspace}"
