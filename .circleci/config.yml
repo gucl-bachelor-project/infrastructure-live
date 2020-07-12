@@ -1,6 +1,6 @@
 version: 2.1
 
-base_image: &base_image hashicorp/terraform:0.12.21
+base_image: &base_image hashicorp/terraform:0.12.28
 
 working_directory: &working_directory ~/terraform
 
@@ -80,7 +80,7 @@ jobs:
       - *attach_working_directory
       - run:
           name: Plan
-          command: terraform plan -out=terraform.plan -var "do_api_token=$DO_API_TOKEN" -var "aws_access_key_id=$AWS_ACCESS_KEY_ID" -var "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" -var "authorized_ssh_keys=[$AUTHORIZED_SSH_KEYS]"
+          command: terraform plan -out=terraform.plan -var "do_api_token=$DO_API_TOKEN"
       - run:
           name: Save plan in plain format
           command: |
