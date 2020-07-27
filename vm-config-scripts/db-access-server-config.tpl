@@ -19,11 +19,3 @@ write_files:
       export APP_DB_2_NAME="${app_db_2_name}"
       export DB_HOSTNAME="${db_hostname}"
       export DB_PORT="${db_port}"
-
-runcmd:
-  # Load environment variables
-  - . /etc/environment
-  # Download Docker Compose files for persistence subsystem from S3 bucket
-  - aws s3 cp s3://${app_docker_compose_bucket_id}/persistence/ /usr/local/app/ --recursive
-  # Setup persistence subsystem and start it
-  - start-application -r ${ecr_base_url}

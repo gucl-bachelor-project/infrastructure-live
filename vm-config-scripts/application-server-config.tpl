@@ -18,11 +18,3 @@ write_files:
       export MAIN_APP_REPO_URL="${main_app_repo_url}"
       export SUPPORT_APP_REPO_URL="${support_app_repo_url}"
       export NGINX_REPO_URL="${nginx_repo_url}"
-
-runcmd:
-  # Load environment variables
-  - . /etc/environment
-  # Download Docker Compose files for business logic subsystem from S3 bucket
-  - aws s3 cp s3://${app_docker_compose_bucket_id}/business-logic/ /usr/local/app/ --recursive
-  # Setup business logic subsystem and start it
-  - start-application -r ${ecr_base_url}
