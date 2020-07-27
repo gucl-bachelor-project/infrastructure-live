@@ -37,15 +37,9 @@ locals {
   # All Amazon ECR repositories where the Docker images for the application are stored
   ecr_repos = local.global_module_output.ecr_repositories
 
-  # ID of S3 bucket where the Docker Compose files for the application are stored
-  app_docker_compose_bucket_id = local.global_module_output.app_docker_compose_files_bucket_id
-
-  # AWS config to use in VMs to access AWS resources/services (e.g. S3 buckets and ECR) during operation
-  aws_config = {
-    region            = local.global_module_output.ecr_region.name
-    access_key_id     = local.global_module_output.iam_app_vm_user_credentials.id
-    secret_access_key = local.global_module_output.iam_app_vm_user_credentials.secret
-  }
+  # Project bucket in DigitalOcean Spaces
+  project_bucket_name   = local.global_module_output.project_bucket_name
+  project_bucket_region = local.global_module_output.project_bucket_region
 }
 
 # ------------------------------------------------------------------------------
@@ -105,16 +99,23 @@ resource "digitalocean_firewall" "base_vm_firewall" {
 # DEPLOY APPLICATION SERVER
 # ------------------------------------------------------------------------------
 module "application_server" {
-  source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.1"
+  # source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.1"
+  source = "../infrastructure-modules/do-application-vm"
 
-  vm_name             = "application-server"
-  boot_image_id       = data.digitalocean_droplet_snapshot.base_snapshot.id
-  do_region           = var.do_region
-  do_vm_size          = lookup(local.vm_size_per_environment.application_server, local.environment, local.vm_sizes.micro)
-  authorized_ssh_keys = [for ssh_key in data.digitalocean_ssh_key.authorized_ssh_keys : ssh_key]
-  aws_config          = local.aws_config
-  app_start_script    = data.template_file.application_server_bootstrap_config.rendered
-  tags                = [local.global_module_output.logging_vm_allowed_droplet_tag_name]
+  vm_name                   = "application-server"
+  boot_image_id             = data.digitalocean_droplet_snapshot.base_snapshot.id
+  do_region                 = var.do_region
+  do_vm_size                = lookup(local.vm_size_per_environment.application_server, local.environment, local.vm_sizes.micro)
+  authorized_ssh_keys       = [for ssh_key in data.digitalocean_ssh_key.authorized_ssh_keys : ssh_key]
+  pvt_key                   = var.pvt_key
+  do_spaces_access_key      = var.do_spaces_access_key_id
+  do_spaces_secret_key      = var.do_spaces_secret_access_key
+  compose_files_bucket_path = "app-docker-compose-files/business-logic/"
+  do_spaces_region          = local.project_bucket_region
+  ecr_base_url              = local.ecr_base_url
+  extra_cloud_init_config   = data.template_file.application_server_bootstrap_config.rendered
+  project_bucket_name       = local.project_bucket_name
+  tags                      = [local.global_module_output.logging_vm_allowed_droplet_tag_name]
 }
 
 # ------------------------------------------------------------------------------
@@ -141,8 +142,6 @@ data "template_file" "application_server_bootstrap_config" {
   template = file("${path.module}/vm-config-scripts/application-server-config.tpl")
 
   vars = {
-    ecr_base_url                           = local.ecr_base_url
-    app_docker_compose_bucket_id           = local.app_docker_compose_bucket_id
     main_app_repo_url                      = local.ecr_repos["bl-main-app"].repository_url
     support_app_repo_url                   = local.ecr_repos["bl-support-app"].repository_url
     nginx_repo_url                         = local.ecr_repos["nginx"].repository_url
@@ -169,15 +168,22 @@ resource "digitalocean_floating_ip_assignment" "application_server_floating_ip_a
 # DEPLOY DB ACCESS SERVER
 # ------------------------------------------------------------------------------
 module "db_access_server" {
-  source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.1"
+  # source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.1"
+  source = "../infrastructure-modules/do-application-vm"
 
-  vm_name             = "db-access-server"
-  boot_image_id       = data.digitalocean_droplet_snapshot.base_snapshot.id
-  do_region           = var.do_region
-  do_vm_size          = lookup(local.vm_size_per_environment.db_access_server, local.environment, local.vm_sizes.micro)
-  authorized_ssh_keys = [for ssh_key in data.digitalocean_ssh_key.authorized_ssh_keys : ssh_key]
-  aws_config          = local.aws_config
-  app_start_script    = data.template_file.db_access_server_bootstrap_config.rendered
+  vm_name                   = "db-access-server"
+  boot_image_id             = data.digitalocean_droplet_snapshot.base_snapshot.id
+  do_region                 = var.do_region
+  do_vm_size                = lookup(local.vm_size_per_environment.application_server, local.environment, local.vm_sizes.micro)
+  authorized_ssh_keys       = [for ssh_key in data.digitalocean_ssh_key.authorized_ssh_keys : ssh_key]
+  pvt_key                   = var.pvt_key
+  do_spaces_access_key      = var.do_spaces_access_key_id
+  do_spaces_secret_key      = var.do_spaces_secret_access_key
+  compose_files_bucket_path = "app-docker-compose-files/persistence/"
+  do_spaces_region          = local.project_bucket_region
+  ecr_base_url              = local.ecr_base_url
+  extra_cloud_init_config   = data.template_file.db_access_server_bootstrap_config.rendered
+  project_bucket_name       = local.project_bucket_name
   tags = [
     local.global_module_output.db_allowed_droplet_tags[local.environment],
     local.global_module_output.logging_vm_allowed_droplet_tag_name
@@ -192,8 +198,6 @@ data "template_file" "db_access_server_bootstrap_config" {
   template = file("${path.module}/vm-config-scripts/db-access-server-config.tpl")
 
   vars = {
-    ecr_base_url                         = local.ecr_base_url
-    app_docker_compose_bucket_id         = local.app_docker_compose_bucket_id
     logging_app_host_url                 = "${local.logging_app_host_ip_address}:8080"
     db_administration_app_repo_url       = local.ecr_repos["db-administration-app"].repository_url
     db_admin_administration_app_repo_url = local.ecr_repos["db-admin-administration-app"].repository_url
