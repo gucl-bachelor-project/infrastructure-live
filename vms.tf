@@ -99,8 +99,7 @@ resource "digitalocean_firewall" "base_vm_firewall" {
 # DEPLOY APPLICATION SERVER
 # ------------------------------------------------------------------------------
 module "application_server" {
-  # source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.1"
-  source = "../infrastructure-modules/do-application-vm"
+  source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v2.0.0"
 
   vm_name                   = "application-server"
   boot_image_id             = data.digitalocean_droplet_snapshot.base_snapshot.id
@@ -168,8 +167,7 @@ resource "digitalocean_floating_ip_assignment" "application_server_floating_ip_a
 # DEPLOY DB ACCESS SERVER
 # ------------------------------------------------------------------------------
 module "db_access_server" {
-  # source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v1.0.1"
-  source = "../infrastructure-modules/do-application-vm"
+  source = "github.com/gucl-bachelor-project/infrastructure-modules//do-application-vm?ref=v2.0.0"
 
   vm_name                   = "db-access-server"
   boot_image_id             = data.digitalocean_droplet_snapshot.base_snapshot.id
