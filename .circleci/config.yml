@@ -80,7 +80,7 @@ jobs:
       - *attach_working_directory
       - run:
           name: Plan
-          command: terraform plan -out=terraform.plan -var "do_api_token=$DO_API_TOKEN"
+          command: terraform plan -out=terraform.plan
       - run:
           name: Save plan in plain format
           command: |
